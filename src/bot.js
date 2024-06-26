@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const log = require('./utils/logger.js');  
-const fs = require('fs'); 
+const fs = require('fs');
 
 require('dotenv').config();
 
@@ -40,4 +40,3 @@ for (const file of fs.readdirSync('./src/events')) {
 }
 
 client.login(process.env.DISCORDTOKEN);
-
