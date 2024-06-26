@@ -46,7 +46,7 @@ async function processMessage(message) {
         }
     }
 
-    if (message.cleanContent.length >= 1000) {
+    if (message.cleanContent.length >= process.env.MINMESSAGEPASTELENGTH) {
         const pasteUrl = await paste(message.cleanContent);
         if (pasteUrl) {
             amalgamation += `${message.author} posted: ${pasteUrl}`;
