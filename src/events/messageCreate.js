@@ -1,4 +1,69 @@
 const logger = require('../utils/logger.js');
+
+let lastPasteTime = Date.now();
+
+async function paste(message) {
+    // paste.com only allows one request every second. This isn't an ideal solution, but I don't really care.
+    if (Date.now() - lastPasteTime < 1000) {
+        await new Promise(r => setTimeout(r, 1000));
+    }
+
+    let response = await fetch("https://dpaste.com/api/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "Whaledev/1.0.0 (+https://github.com/ImmutableVariable/whaledev)"
+        },
+        body: "content=" + encodeURIComponent(message),
+    });
+    lastPasteTime = Date.now();
+
+    return response.headers.get("location");
+}
+
+async function processMessage(message) {
+    let amalgamation = "";
+    let reply = true;
+
+    let attachments = message.attachments.values();
+    for (let attachment of attachments) {
+        let url = attachment.url;
+        let contentType = attachment.contentType;
+
+        if (contentType && (contentType.includes("text") || contentType.includes("utf-8"))) {
+            try {
+                const data = await fetch(url).then(response => response.text());
+                const pasteUrl = await paste(data);
+
+                if (pasteUrl) {
+                    amalgamation += `${attachment.name}: ${pasteUrl}\n`;
+                } else {
+                    await message.channel.send(`Failed to create paste for file ${attachment.name}`);
+                }
+            } catch (error) {
+                logger.error(`Error processing attachment ${attachment.name}:`, error);
+            }
+        }
+    }
+
+    if (message.cleanContent.length >= 1000) {
+        const pasteUrl = await paste(message.cleanContent);
+        if (pasteUrl) {
+            amalgamation += `${message.author} posted: ${pasteUrl}`;
+            reply = false;
+            await message.delete();
+        }
+    }
+
+    if (amalgamation) {
+        if (reply) {
+            await message.reply(amalgamation);
+        } else {
+            await message.channel.send(amalgamation);
+        }
+    }
+}
+
 module.exports = {
     name: 'messageCreate',
     async execute(message) {
@@ -17,14 +82,18 @@ module.exports = {
 
         if (message.author.bot) return;
 
+
         const prefix = process.env.PREFIX;
-        if (!message.content.startsWith(prefix)) return;
+        if (!message.content.startsWith(prefix)) {
+            await processMessage(message);
+            return;
+        }
 
         const args = message.content.trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
 
         const command = message.client.textCommands.get(commandName.slice(prefix.length));
-        
+
         if (!command) return;
 
         try {
