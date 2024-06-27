@@ -9,7 +9,7 @@ module.exports = {
 
         const presence = {
             activities: [{
-                name: `for ${client.guilds.cache.size} servers!`,
+                name: `for ${process.env.PREFIX}help`,
                 type: ActivityType.Watching
             }],
             status: 'online',
