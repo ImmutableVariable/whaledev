@@ -64,7 +64,9 @@ module.exports = {
 
 
         const prefix = process.env.PREFIX;
-        if (!message.content.startsWith(prefix)) {
+        const prefixUpper = prefix.toUpperCase();
+
+        if (!message.content.startsWith(prefix) && !message.content.startsWith(prefixUpper)) {
             await processMessage(message);
             return;
         }

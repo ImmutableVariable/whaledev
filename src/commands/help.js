@@ -5,7 +5,7 @@ module.exports = {
     private: false,
     execute(message) {
         const commands = message.client.textCommands;
-
+        const prefix = process.env.PREFIX;
         const data = [];
 
         if (!commands) {
@@ -20,7 +20,8 @@ module.exports = {
 
             data.push(`Name: ${command.name}`);
             data.push(`Description: ${command.description}`);
-            data.push(`Usage: ${command.usage}`);
+            data.push(`Usage: ${command.usage.replace("<prefix>", prefix)}`);
+
             data.push(`\n`)
         });
         data.push("```");
