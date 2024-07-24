@@ -1,15 +1,17 @@
+use once_cell::sync::Lazy;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
-use std::time::{Duration, Instant};
+use serenity::futures::lock::Mutex;
+use std::{sync::Arc, time::{Duration, Instant}};
 use tokio::time::sleep;
 
-// This is a terrible way i think to handle this, but I don't really care.
-static mut LAST_PASTE_TIME: Option<Instant> = None;
+// This is a little better ig, i dont think its really great though
+static LAST_PASTE_TIME: Lazy<Arc<Mutex<Option<Instant>>>> = Lazy::new(|| Arc::new(Mutex::new(None)));
 
 pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let last_paste_time = unsafe { LAST_PASTE_TIME };
+    let last_paste_time = Arc::clone(&LAST_PASTE_TIME);
     let version = env!("CARGO_PKG_VERSION").to_string();
     // paste.com only allows one request every second. This isn't an ideal solution, but I don't really care.
-    if let Some(last_time) = last_paste_time {
+    if let Some(last_time) = last_paste_time.lock().await.as_ref() {
         if last_time.elapsed() < Duration::from_secs(1) {
             sleep(Duration::from_secs(1)).await;
         }
@@ -20,6 +22,10 @@ pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> 
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/x-www-form-urlencoded"));
     headers.insert(USER_AGENT, HeaderValue::from_str(&format!("Whaledev/{} (+https://github.com/ImmutableVariable/whaledev)", version)).unwrap());
     
+    if let Ok(api_key) = std::env::var("DPASTE_API_KEY") { // add api key if it exists
+        headers.insert("Authorization", HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+    }
+
     let response = client.post("https://dpaste.com/api/")
         .headers(headers)
         .body(format!("content={}", message))
@@ -28,7 +34,8 @@ pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> 
     
     let paste_url = response.headers().get("location").unwrap().to_str()?;
     
-    unsafe { LAST_PASTE_TIME = Some(Instant::now()); }
+    *LAST_PASTE_TIME.lock().await = Some(Instant::now());
+
     Ok(paste_url.to_string())
 }
 
