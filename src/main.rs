@@ -3,6 +3,7 @@ use serenity::all::{ActivityData, ChannelId, CreateMessage, Member, OnlineStatus
 use serenity::model::channel::Message;
 use serenity::{futures, prelude::*};
 use serenity::{async_trait, builder};
+use util::should_paste_message;
 use std::env;
 mod commands;
 pub mod util;
@@ -29,7 +30,7 @@ impl EventHandler for Handler {
                 msg.channel_id
                     .say(&ctx.http, "Bump done, I will remind you in 2hr!")
                     .await
-                    .expect("Error sending message");
+                    .expect("Error sending message, first bump done");
 
                 let reminder_channel_id = std::env::var("REMINDER_CHANNEL_ID")
                     .unwrap()
@@ -59,23 +60,8 @@ impl EventHandler for Handler {
             return;
         }
 
-        if msg.content.len() > env::var("MAX_MESSAGE_LENGTH")
-            .unwrap()
-            .parse::<usize>()
-            .unwrap()
-        {
-            let url = util::paste(&msg.content).await.unwrap();
-            let user_id = msg.author.id.to_string();
-            let url = format!("<@{}> has pasted:\n {}", user_id, url);
-            msg.channel_id
-                .say(&ctx.http, &url)
-                .await
-                .expect("Error sending message");
-            msg.delete(&ctx.http).await.expect("Error deleting message");
-            return;
-        }
-
         // check if the message contains attachments, if it does, upload the attachments to a paste service
+        // this must be before message length check, otherwise, the long message would be deleted and the attachments would be lost 
         if !msg.attachments.is_empty() {
             let formatted_content = msg.attachments.iter()
                 .filter_map(|attachment| {
@@ -90,17 +76,28 @@ impl EventHandler for Handler {
                 .collect::<futures::future::JoinAll<_>>()
                 .await
                 .join("");
-        
+            
             if !formatted_content.is_empty() {
                 let user_id = msg.author.id.to_string();
-                let url = util::paste(&formatted_content).await.unwrap();
+
+                let url = util::paste(&formatted_content).await.expect("Error creating paste URL");
                 let formatted_message = format!("<@{}> has pasted:\n {}", user_id, url);
         
                 msg.channel_id.say(&ctx.http, &formatted_message).await.expect("Error sending message");
-                msg.delete(&ctx.http).await.expect("Error deleting message");
             }
         }
 
+                
+        if should_paste_message(msg.content.len()) {
+            let url = util::paste(&msg.content).await.expect("Error creating paste URL");
+            let formatted_response = format!("<@{}> has pasted:\n {}", msg.author.id, url);
+            msg.channel_id
+                .say(&ctx.http, &formatted_response)
+                .await
+                .expect("Error sending message");
+            msg.delete(&ctx.http).await.expect("Error deleting message");
+            return;
+        }
 
         let prefix = env::var("PREFIX").unwrap();
         if msg.content.starts_with(&prefix) {
