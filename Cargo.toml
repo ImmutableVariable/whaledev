@@ -1,0 +1,11 @@
+[package]
+name = "whaledev"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenvy = "0.15.7"
+reqwest = { version = "0.12.5", features = ["json"] }
+serenity = "0.12"
+tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
+once_cell = "1.19.0"
