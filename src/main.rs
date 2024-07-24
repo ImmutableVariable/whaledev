@@ -130,12 +130,14 @@ impl EventHandler for Handler {
             .unwrap()
             .parse::<u64>()
             .unwrap();
+        
         let guild_member_count = new_member
             .guild_id
             .members(&ctx.http, None, None)
             .await
             .expect("Error getting member count")
             .len();
+
         let new_member_id = new_member.user.id;
 
         let embed = builder::CreateEmbed::default()
@@ -146,6 +148,7 @@ impl EventHandler for Handler {
             .description(format!("You are the {} member!", util::formatted_number(guild_member_count as u64)))
             .thumbnail(new_member.user.face())
             .color(0xFFB6C1);
+
         let message = CreateMessage::new()
             .content(format!(
                 "||<@&{}> <@{}>||",
