@@ -1,5 +1,5 @@
 use dotenv::dotenv;
-use serenity::all::{ChannelId, CreateMessage, Member, Ready};
+use serenity::all::{ActivityData, ChannelId, CreateMessage, Member, OnlineStatus, Ready};
 use serenity::model::channel::Message;
 use serenity::{futures, prelude::*};
 use serenity::{async_trait, builder};
@@ -12,20 +12,6 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        /*
-                if (message.author.id === "302050872383242240" && message.embeds.length > 0) {
-            if (message.embeds[0].title !== "DISBOARD: The Public Server List" || !(message.embeds[0].description.includes("Bump done"))) return;
-
-            await message.channel.send(`Bump done, I will remind you in 2hr!`)
-
-            setTimeout(() => {
-                const reminderChannel = message.client.channels.cache.get(process.env.REMINDCHANNELID);
-                reminderChannel.send(`<@&${process.env.REMINDERROLEID}>, it's time to bump the server!`);
-            }, 7200000);
-
-            return;
-        }
-         */
         if msg.author.id == "302050872383242240".parse::<u64>().unwrap() {
             if msg.embeds.len() > 0 {
                 if let Some(title) = &msg.embeds[0].title {
@@ -132,8 +118,14 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn ready(&self, _ctx: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
+
+        let prefix = std::env::var("PREFIX").unwrap();
+        let activity = ActivityData::watching(format!("for {}help", prefix));
+        let status = OnlineStatus::Online;
+
+        ctx.set_presence(Some(activity), status);
     }
 
     async fn guild_member_addition(&self, ctx: Context, new_member: Member) {
