@@ -1,4 +1,4 @@
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use serenity::all::{ActivityData, ChannelId, CreateMessage, Member, OnlineStatus, Ready};
 use serenity::model::channel::Message;
 use serenity::{futures, prelude::*};
