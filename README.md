@@ -26,6 +26,7 @@ Whaledev is a discord bot written using [Serenity](https://www.github.com/sereni
 7. `REMINDER_CHANNEL_ID` - ID of the channel the bump reminder will be sent to.
 8. `MAX_MESSAGE_LENGTH` - maximum length of a message that can be sent in the server. (Default is 1500)
 9. `PREFIX` - prefix you want the bot to use. (Default is `!`)
+
 ### Running
 
 - Debug: `cargo run`
