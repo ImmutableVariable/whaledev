@@ -4,6 +4,12 @@ use serenity::prelude::Context;
 use sqlx::SqliteConnection;
 use sqlx::Row;
 
+fn generate_progress_bar(progress: f32, length: usize) -> String {
+    (0..length)
+        .map(|i| if i as f32 / length as f32 <= progress { "█" } else { "░" })
+        .collect()
+}
+
 pub async fn execute(
     ctx: Context,
     msg: &Message,
@@ -28,11 +34,13 @@ pub async fn execute(
     let xp_constant = std::env::var("XP_CONSTANT")?.parse::<i32>()?;
     let xp_required = xp_constant * (level * level);
 
+    // 50/100 = 0.5
+    let progress = xp as f32 / xp_required as f32;
+    let progress_bar = generate_progress_bar(progress, 10);
+    
     let message = format!(
-        "You have {} XP and are level {}! You need {} XP to level up.",
-        xp,
-        level,
-        xp_required - xp
+        "You are level {} with {} XP\n{}/{} [{}]",
+        level, xp, xp, xp_required, progress_bar
     );
 
     msg.channel_id.say(&ctx.http, &message).await?;
