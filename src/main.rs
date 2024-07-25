@@ -6,12 +6,15 @@ use serenity::{futures, prelude::*};
 use sqlx::sqlite::SqliteConnection;
 use sqlx::Connection;
 use std::env;
-
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use util::should_paste_message;
 mod commands;
 pub mod util;
 
-struct Handler;
+struct Handler {
+    db_pool: Arc<Mutex<SqliteConnection>>,
+}
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -125,6 +128,31 @@ impl EventHandler for Handler {
                     println!("Error handling command: {:?}", why);
                 }
             }
+
+            return;
+        }
+
+        if msg.content.len() > 5 {
+            let mut conn = self.db_pool.lock().await;
+            let user_id = msg.author.id.to_string();
+
+            let row = sqlx::query("SELECT * FROM users WHERE user_id = ?")
+                .bind(&user_id)
+                .fetch_optional(&mut *conn)
+                .await
+                .expect("Error fetching user");
+
+            if let Some(row) = row {
+
+            } else {
+                sqlx::query("INSERT INTO users (user_id, xp, level) VALUES (?, ?, ?)")
+                    .bind(&user_id)
+                    .bind(1)
+                    .bind(0)
+                    .execute(&mut *conn)
+                    .await
+                    .expect("Error inserting user");
+            }
         }
     }
 
@@ -185,12 +213,16 @@ impl EventHandler for Handler {
 async fn main() {
     dotenv().ok(); // expects a .env file in the root directory
 
-    let db_url = "sqlite://data/mydatabase.db";
+    let db_url = "sqlite://./data/my_database.db";
+    
+    // Ensure the directory for the database file exists
+    std::fs::create_dir_all("./data").expect("Failed to create database directory");
+
     let mut conn = SqliteConnection::connect(db_url).await.unwrap();
     
     sqlx::query(
         r#"
-        CREATE TABLE users (
+        CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
             user_id TEXT NOT NULL,
             xp INTEGER NOT NULL DEFAULT 0,
@@ -209,8 +241,12 @@ async fn main() {
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
+    let handler = Handler {
+        db_pool: Arc::new(Mutex::new(conn)),
+    };
+
     let mut client = Client::builder(&token, intents)
-        .event_handler(Handler)
+        .event_handler(handler)
         .await
         .expect("Error building client");
 
