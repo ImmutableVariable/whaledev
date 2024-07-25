@@ -10,3 +10,4 @@ serenity = "0.12"
 tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
 once_cell = "1.19.0"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite" ] }
+chrono = "0.4.38"

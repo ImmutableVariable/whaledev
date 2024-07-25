@@ -8,7 +8,9 @@ use sqlx::{Connection, Row};
 use std::env;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use util::should_paste_message;
+use util::{should_paste_message, time_elapsed_from_string};
+use chrono::NaiveDateTime;
+
 mod commands;
 pub mod util;
 
@@ -148,16 +150,21 @@ impl EventHandler for Handler {
                     .unwrap()
                     .parse::<i32>()
                     .unwrap();
+                let xp_timeout = std::env::var("XP_TIMEOUT")
+                    .unwrap()
+                    .parse::<i64>()
+                    .unwrap();
                 let level: i32 = row.get("level");
                 let xp: i32 = row.get("xp");
                 let xp_required = xp_constant * (level * level);
+            
+                let last_message_at: String = row.get("updated_at");
+                let duration = time_elapsed_from_string(&last_message_at).unwrap();
+                if duration.num_seconds() < xp_timeout {
+                    return;
+                }
 
                 if xp >= xp_required {
-                    sqlx::query("UPDATE users SET level = level + 1, xp = 0 WHERE id = ?")
-                        .bind(&user_id)
-                        .execute(&mut *conn)
-                        .await
-                        .expect("Error updating user");
                     msg.channel_id
                         .say(
                             &ctx.http,
@@ -168,8 +175,14 @@ impl EventHandler for Handler {
                         )
                         .await
                         .expect("Error sending message");
+                
+                    sqlx::query("UPDATE users SET level = level + 1, xp = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                        .bind(&user_id)
+                        .execute(&mut *conn)
+                        .await
+                        .expect("Error updating user");
                 } else {
-                    sqlx::query("UPDATE users SET xp = xp + 1 WHERE id = ?")
+                    sqlx::query("UPDATE users SET xp = xp + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
                         .bind(&user_id)
                         .execute(&mut *conn)
                         .await
@@ -256,7 +269,8 @@ async fn main() {
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             xp INTEGER NOT NULL DEFAULT 0,
-            level INTEGER NOT NULL DEFAULT 0
+            level INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         "#
     )

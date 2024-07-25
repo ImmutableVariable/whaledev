@@ -1,3 +1,4 @@
+use chrono::{NaiveDateTime, TimeDelta};
 use once_cell::sync::Lazy;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
 use serenity::futures::lock::Mutex;
@@ -100,4 +101,13 @@ pub fn should_paste_message(message_length: usize) -> bool {
             .unwrap()
             .parse::<usize>()
             .unwrap()
+}
+
+/// Returns the time elapsed from a string in the format of "%Y-%m-%d %H:%M:%S"
+/// The expected input is from the database's built in timestamp
+pub fn time_elapsed_from_string(time_string: &str) -> Result<TimeDelta, Box<dyn std::error::Error>> {
+    let last_message_at = NaiveDateTime::parse_from_str(time_string, "%Y-%m-%d %H:%M:%S")?;
+    let now = chrono::Utc::now().naive_utc();
+    let duration = now - last_message_at;
+    Ok(duration)
 }
