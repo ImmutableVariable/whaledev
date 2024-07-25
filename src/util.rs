@@ -1,11 +1,15 @@
 use once_cell::sync::Lazy;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
 use serenity::futures::lock::Mutex;
-use std::{sync::Arc, time::{Duration, Instant}};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use tokio::time::sleep;
 
 // This is a little better ig, i dont think its really great though
-static LAST_PASTE_TIME: Lazy<Arc<Mutex<Option<Instant>>>> = Lazy::new(|| Arc::new(Mutex::new(None)));
+static LAST_PASTE_TIME: Lazy<Arc<Mutex<Option<Instant>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(None)));
 
 pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> {
     let last_paste_time = Arc::clone(&LAST_PASTE_TIME);
@@ -19,21 +23,36 @@ pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> 
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/x-www-form-urlencoded"));
-    headers.insert(USER_AGENT, HeaderValue::from_str(&format!("Whaledev/{} (+https://github.com/ImmutableVariable/whaledev)", version)).unwrap());
-    
-    if let Ok(api_key) = std::env::var("DPASTE_API_KEY") { // add api key if it exists
-        headers.insert("Authorization", HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+    headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static("application/x-www-form-urlencoded"),
+    );
+    headers.insert(
+        USER_AGENT,
+        HeaderValue::from_str(&format!(
+            "Whaledev/{} (+https://github.com/ImmutableVariable/whaledev)",
+            version
+        ))
+        .unwrap(),
+    );
+
+    if let Ok(api_key) = std::env::var("DPASTE_API_KEY") {
+        // add api key if it exists
+        headers.insert(
+            "Authorization",
+            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+        );
     }
 
-    let response = client.post("https://dpaste.com/api/")
+    let response = client
+        .post("https://dpaste.com/api/")
         .headers(headers)
         .body(format!("content={}", message))
         .send()
         .await?;
-    
+
     let paste_url = response.headers().get("location").unwrap().to_str()?;
-    
+
     *LAST_PASTE_TIME.lock().await = Some(Instant::now());
 
     Ok(paste_url.to_string())
@@ -50,16 +69,16 @@ pub fn formatted_number(number: u64) -> String {
     let last_digit = number % 10;
     let last_two_digits = number % 100;
     let number = number.to_string();
-    if last_two_digits >= 11 && last_two_digits <= 13 {
-        return format!("{}th", number);
+    if (11..=13).contains(&last_two_digits) {
+        format!("{}th", number)
     } else if last_digit == 1 {
-        return format!("{}st", number);
+        format!("{}st", number)
     } else if last_digit == 2 {
-        return format!("{}nd", number);
+        format!("{}nd", number)
     } else if last_digit == 3 {
-        return format!("{}rd", number);
+        format!("{}rd", number)
     } else {
-        return format!("{}th", number);
+        format!("{}th", number)
     }
 }
 
@@ -70,12 +89,15 @@ pub fn execute_console_command(code: &str) -> Result<String, std::io::Error> {
         .arg(code)
         .output()?;
 
-
     // format into a bash code block
     let output_msg = format!("```bash\n{}```", String::from_utf8_lossy(&output.stdout));
-    return Ok(output_msg);
+    Ok(output_msg)
 }
 
 pub fn should_paste_message(message_length: usize) -> bool {
-    message_length > std::env::var("MAX_MESSAGE_LENGTH").unwrap().parse::<usize>().unwrap()
+    message_length
+        > std::env::var("MAX_MESSAGE_LENGTH")
+            .unwrap()
+            .parse::<usize>()
+            .unwrap()
 }

@@ -1,10 +1,10 @@
 use dotenvy::dotenv;
 use serenity::all::{ActivityData, ChannelId, CreateMessage, Member, OnlineStatus, Ready};
 use serenity::model::channel::Message;
-use serenity::{futures, prelude::*};
 use serenity::{async_trait, builder};
-use util::should_paste_message;
+use serenity::{futures, prelude::*};
 use std::env;
+use util::should_paste_message;
 mod commands;
 pub mod util;
 
@@ -13,47 +13,45 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.id == "302050872383242240".parse::<u64>().unwrap() {
-            if msg.embeds.len() > 0 {
-                if let Some(title) = &msg.embeds[0].title {
-                    if title != "DISBOARD: The Public Server List" {
-                        return;
-                    }
+        if msg.author.id == "302050872383242240".parse::<u64>().unwrap() && msg.embeds.is_empty(){
+            if let Some(title) = &msg.embeds[0].title {
+                if title != "DISBOARD: The Public Server List" {
+                    return;
                 }
-
-                if let Some(description) = &msg.embeds[0].description {
-                    if !description.contains("Bump done") {
-                        return;
-                    }
-                }
-
-                msg.channel_id
-                    .say(&ctx.http, "Bump done, I will remind you in 2hr!")
-                    .await
-                    .expect("Error sending message, first bump done");
-
-                let reminder_channel_id = std::env::var("REMINDER_CHANNEL_ID")
-                    .unwrap()
-                    .parse::<u64>()
-                    .unwrap();
-
-                // wait 2 hours before sending the reminder
-                tokio::time::sleep(tokio::time::Duration::from_secs(7200)).await;
-
-                let reminder_channel = ChannelId::new(reminder_channel_id);
-                reminder_channel
-                    .say(
-                        &ctx.http,
-                        format!(
-                            "<@&{}>, it's time to bump the server!",
-                            std::env::var("REMINDER_ROLE_ID").unwrap()
-                        ),
-                    )
-                    .await
-                    .expect("Error sending message");
-
-                return;
             }
+
+            if let Some(description) = &msg.embeds[0].description {
+                if !description.contains("Bump done") {
+                    return;
+                }
+            }
+
+            msg.channel_id
+                .say(&ctx.http, "Bump done, I will remind you in 2hr!")
+                .await
+                .expect("Error sending message, first bump done");
+
+            let reminder_channel_id = std::env::var("REMINDER_CHANNEL_ID")
+                .unwrap()
+                .parse::<u64>()
+                .unwrap();
+
+            // wait 2 hours before sending the reminder
+            tokio::time::sleep(tokio::time::Duration::from_secs(7200)).await;
+
+            let reminder_channel = ChannelId::new(reminder_channel_id);
+            reminder_channel
+                .say(
+                    &ctx.http,
+                    format!(
+                        "<@&{}>, it's time to bump the server!",
+                        std::env::var("REMINDER_ROLE_ID").unwrap()
+                    ),
+                )
+                .await
+                .expect("Error sending message");
+
+            return;
         }
 
         if msg.author.bot {
@@ -61,35 +59,47 @@ impl EventHandler for Handler {
         }
 
         // check if the message contains attachments, if it does, upload the attachments to a paste service
-        // this must be before message length check, otherwise, the long message would be deleted and the attachments would be lost 
+        // this must be before message length check, otherwise, the long message would be deleted and the attachments would be lost
         if !msg.attachments.is_empty() {
-            let formatted_content = msg.attachments.iter()
-                .filter_map(|attachment| {
-                    attachment.content_type.as_ref()?
-                        .starts_with("text/plain")
-                        .then(|| attachment)
-                })
+            let formatted_content = msg
+                .attachments
+                .iter()
+                .filter(|&attachment| attachment
+                    .content_type
+                    .as_ref()
+                    .unwrap_or(&"".to_string())
+                    .starts_with("text/plain"))
                 .map(|attachment| async {
                     let content = attachment.download().await.unwrap();
-                    format!("File: {}\n{}\n\n", attachment.filename, String::from_utf8_lossy(&content))
+                    format!(
+                        "File: {}\n{}\n\n",
+                        attachment.filename,
+                        String::from_utf8_lossy(&content)
+                    )
                 })
                 .collect::<futures::future::JoinAll<_>>()
                 .await
                 .join("");
-            
+
             if !formatted_content.is_empty() {
                 let user_id = msg.author.id.to_string();
 
-                let url = util::paste(&formatted_content).await.expect("Error creating paste URL");
+                let url = util::paste(&formatted_content)
+                    .await
+                    .expect("Error creating paste URL");
                 let formatted_message = format!("<@{}> has pasted:\n {}", user_id, url);
-        
-                msg.channel_id.say(&ctx.http, &formatted_message).await.expect("Error sending message");
+
+                msg.channel_id
+                    .say(&ctx.http, &formatted_message)
+                    .await
+                    .expect("Error sending message");
             }
         }
 
-                
         if should_paste_message(msg.content.len()) {
-            let url = util::paste(&msg.content).await.expect("Error creating paste URL");
+            let url = util::paste(&msg.content)
+                .await
+                .expect("Error creating paste URL");
             let formatted_response = format!("<@{}> has pasted:\n {}", msg.author.id, url);
             msg.channel_id
                 .say(&ctx.http, &formatted_response)
@@ -130,7 +140,7 @@ impl EventHandler for Handler {
             .unwrap()
             .parse::<u64>()
             .unwrap();
-        
+
         let guild_member_count = new_member
             .guild_id
             .members(&ctx.http, None, None)
@@ -145,7 +155,10 @@ impl EventHandler for Handler {
                 "Welcome, {}, to the server! 🎉",
                 new_member.user.name
             ))
-            .description(format!("You are the {} member!", util::formatted_number(guild_member_count as u64)))
+            .description(format!(
+                "You are the {} member!",
+                util::formatted_number(guild_member_count as u64)
+            ))
             .thumbnail(new_member.user.face())
             .color(0xFFB6C1);
 
