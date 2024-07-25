@@ -2,7 +2,6 @@ use dotenvy::dotenv;
 use serenity::prelude::*;
 use sqlx::sqlite::SqliteConnection;
 use sqlx::Connection;
-use tokio::fs;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
