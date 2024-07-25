@@ -1,6 +1,6 @@
+// help.rs
 use serenity::all::CreateMessage;
 use serenity::builder;
-// help.rs
 use serenity::model::channel::Message;
 use serenity::prelude::Context;
 
