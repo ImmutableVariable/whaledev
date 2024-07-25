@@ -117,12 +117,13 @@ impl EventHandler for Handler {
 
         let prefix = env::var("PREFIX").unwrap();
         if msg.content.starts_with(&prefix) {
+            let mut conn = self.db_pool.lock().await;
             let content = msg.content.trim_start_matches(&prefix);
             let mut args = content.split_whitespace();
             let command = args.next().unwrap_or(""); // the first word will be the command name
             let args = args.collect::<Vec<&str>>(); // the rest of the words will be the arguments
 
-            match commands::handler(ctx, &msg, command, args).await {
+            match commands::handler(ctx, &msg, command, args, &mut conn).await {
                 Ok(_) => {}
                 Err(why) => {
                     println!("Error handling command: {:?}", why);

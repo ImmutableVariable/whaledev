@@ -1,15 +1,18 @@
 use serenity::model::channel::Message;
 use serenity::prelude::Context;
+use sqlx::SqliteConnection;
 mod eval;
 mod help;
 mod paste;
 mod ping;
+mod rank;
 
 pub async fn handler(
     ctx: Context,
     msg: &Message,
     command: &str,
     args: Vec<&str>,
+    db_conn: &mut SqliteConnection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         "ping" => {
@@ -23,6 +26,9 @@ pub async fn handler(
         }
         "help" => {
             help::execute(ctx, msg, args).await?;
+        }
+        "rank" => {
+            rank::execute(ctx, msg, args, db_conn).await?;
         }
         _ => {
             // say nothing...
