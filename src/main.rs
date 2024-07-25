@@ -4,7 +4,7 @@ use serenity::model::channel::Message;
 use serenity::{async_trait, builder};
 use serenity::{futures, prelude::*};
 use sqlx::sqlite::SqliteConnection;
-use sqlx::Connection;
+use sqlx::{Connection, Row};
 use std::env;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -132,20 +132,50 @@ impl EventHandler for Handler {
             return;
         }
 
-        if msg.content.len() > 5 {
+        if msg.content.len() >= 5 {
             let mut conn = self.db_pool.lock().await;
             let user_id = msg.author.id.to_string();
 
-            let row = sqlx::query("SELECT * FROM users WHERE user_id = ?")
+            let row = sqlx::query("SELECT * FROM users WHERE id = ?")
                 .bind(&user_id)
                 .fetch_optional(&mut *conn)
                 .await
                 .expect("Error fetching user");
 
             if let Some(row) = row {
+                let xp_constant = std::env::var("XP_CONSTANT")
+                    .unwrap()
+                    .parse::<i32>()
+                    .unwrap();
+                let level: i32 = row.get("level");
+                let xp: i32 = row.get("xp");
+                let xp_required = xp_constant * (level * level);
 
+                if xp >= xp_required {
+                    sqlx::query("UPDATE users SET level = level + 1, xp = 0 WHERE id = ?")
+                        .bind(&user_id)
+                        .execute(&mut *conn)
+                        .await
+                        .expect("Error updating user");
+                    msg.channel_id
+                        .say(
+                            &ctx.http,
+                            format!(
+                                "<@{}> has leveled up to level {}!",
+                                msg.author.id, level + 1
+                            ),
+                        )
+                        .await
+                        .expect("Error sending message");
+                } else {
+                    sqlx::query("UPDATE users SET xp = xp + 1 WHERE id = ?")
+                        .bind(&user_id)
+                        .execute(&mut *conn)
+                        .await
+                        .expect("Error updating user");
+                }
             } else {
-                sqlx::query("INSERT INTO users (user_id, xp, level) VALUES (?, ?, ?)")
+                sqlx::query("INSERT INTO users (id, xp, level) VALUES (?, ?, ?)")
                     .bind(&user_id)
                     .bind(1)
                     .bind(0)
@@ -213,7 +243,7 @@ impl EventHandler for Handler {
 async fn main() {
     dotenv().ok(); // expects a .env file in the root directory
 
-    let db_url = "sqlite://./data/my_database.db";
+    let db_url = "sqlite://./data/database.db";
     
     // Ensure the directory for the database file exists
     std::fs::create_dir_all("./data").expect("Failed to create database directory");
@@ -223,8 +253,7 @@ async fn main() {
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            user_id TEXT NOT NULL,
+            id TEXT PRIMARY KEY,
             xp INTEGER NOT NULL DEFAULT 0,
             level INTEGER NOT NULL DEFAULT 0
         )
