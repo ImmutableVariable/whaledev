@@ -17,45 +17,47 @@ pub struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.id == "302050872383242240".parse::<u64>().unwrap() && msg.embeds.is_empty(){
-            if let Some(title) = &msg.embeds[0].title {
-                if title != "DISBOARD: The Public Server List" {
-                    return;
+        if msg.author.id == "302050872383242240".parse::<u64>().unwrap() {
+            if msg.embeds.len() > 0 {
+                if let Some(title) = &msg.embeds[0].title {
+                    if title != "DISBOARD: The Public Server List" {
+                        return;
+                    }
                 }
-            }
-    
-            if let Some(description) = &msg.embeds[0].description {
-                if !description.contains("Bump done") {
-                    return;
+
+                if let Some(description) = &msg.embeds[0].description {
+                    if !description.contains("Bump done") {
+                        return;
+                    }
                 }
+
+                msg.channel_id
+                    .say(&ctx.http, "Bump done, I will remind you in 2hr!")
+                    .await
+                    .expect("Error sending message, first bump done");
+
+                let reminder_channel_id = std::env::var("REMINDER_CHANNEL_ID")
+                    .unwrap()
+                    .parse::<u64>()
+                    .unwrap();
+
+                // wait 2 hours before sending the reminder
+                tokio::time::sleep(tokio::time::Duration::from_secs(7200)).await;
+
+                let reminder_channel = ChannelId::new(reminder_channel_id);
+                reminder_channel
+                    .say(
+                        &ctx.http,
+                        format!(
+                            "<@&{}>, it's time to bump the server!",
+                            std::env::var("REMINDER_ROLE_ID").unwrap()
+                        ),
+                    )
+                    .await
+                    .expect("Error sending message");
+
+                return;
             }
-    
-            msg.channel_id
-                .say(&ctx.http, "Bump done, I will remind you in 2hr!")
-                .await
-                .expect("Error sending message, first bump done");
-    
-            let reminder_channel_id = std::env::var("REMINDER_CHANNEL_ID")
-                .unwrap()
-                .parse::<u64>()
-                .unwrap();
-    
-            // wait 2 hours before sending the reminder
-            tokio::time::sleep(tokio::time::Duration::from_secs(7200)).await;
-    
-            let reminder_channel = ChannelId::new(reminder_channel_id);
-            reminder_channel
-                .say(
-                    &ctx.http,
-                    format!(
-                        "<@&{}>, it's time to bump the server!",
-                        std::env::var("REMINDER_ROLE_ID").unwrap()
-                    ),
-                )
-                .await
-                .expect("Error sending message");
-    
-            return;
         }
     
         if msg.author.bot {

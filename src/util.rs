@@ -97,8 +97,7 @@ pub fn execute_console_command(code: &str) -> Result<String, std::io::Error> {
 
 pub fn should_paste_message(message_length: usize) -> bool {
     message_length
-        > std::env::var("MAX_MESSAGE_LENGTH")
-            .unwrap()
+        > get_env_var("MAX_MESSAGE_LENGTH")
             .parse::<usize>()
             .unwrap()
 }
@@ -110,4 +109,9 @@ pub fn time_elapsed_from_string(time_string: &str) -> Result<TimeDelta, Box<dyn 
     let now = chrono::Utc::now().naive_utc();
     let duration = now - last_message_at;
     Ok(duration)
+}
+
+/// Just a prettier way to get a env var as a string
+pub fn get_env_var(var: &str) -> String {
+    std::env::var(var).expect(&format!("Expected {} in the environment, found none.", var))
 }

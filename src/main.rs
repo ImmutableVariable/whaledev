@@ -2,7 +2,7 @@ use dotenvy::dotenv;
 use serenity::prelude::*;
 use sqlx::sqlite::SqliteConnection;
 use sqlx::Connection;
-use std::env;
+use tokio::fs;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -14,12 +14,9 @@ pub mod events;
 async fn main() {
     dotenv().ok(); // expects a .env file in the root directory
 
-    let db_url = "sqlite://./data/database.db";
-    
-    // Ensure the directory for the database file exists
-    std::fs::create_dir_all("./data").expect("Failed to create database directory");
+    let db_path: &str = "sqlite://./data/database.db";
 
-    let mut conn = SqliteConnection::connect(db_url).await.unwrap();
+    let mut conn = SqliteConnection::connect(db_path).await.unwrap();
     
     sqlx::query(
         r#"
@@ -35,7 +32,7 @@ async fn main() {
     .await
     .unwrap();
 
-    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    let token = util::get_env_var("DISCORD_TOKEN");
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::GUILD_MEMBERS
