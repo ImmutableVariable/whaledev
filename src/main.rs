@@ -3,7 +3,10 @@ use serenity::all::{ActivityData, ChannelId, CreateMessage, Member, OnlineStatus
 use serenity::model::channel::Message;
 use serenity::{async_trait, builder};
 use serenity::{futures, prelude::*};
+use sqlx::sqlite::SqliteConnection;
+use sqlx::Connection;
 use std::env;
+
 use util::should_paste_message;
 mod commands;
 pub mod util;
@@ -181,6 +184,23 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
     dotenv().ok(); // expects a .env file in the root directory
+
+    let db_url = "sqlite://data/mydatabase.db";
+    let mut conn = SqliteConnection::connect(db_url).await.unwrap();
+    
+    sqlx::query(
+        r#"
+        CREATE TABLE users (
+            id INTEGER PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            xp INTEGER NOT NULL DEFAULT 0,
+            level INTEGER NOT NULL DEFAULT 0
+        )
+        "#
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
