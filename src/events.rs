@@ -14,6 +14,7 @@ pub struct Handler {
     pub db_pool: Arc<Mutex<SqliteConnection>>,
 }
 
+
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
@@ -152,7 +153,7 @@ impl EventHandler for Handler {
                     .unwrap();
                 let level: i32 = row.get("level");
                 let xp: i32 = row.get("xp");
-                let xp_required = xp_constant * (level * level);
+                let xp_required = util::xp_required(level, xp_constant);
             
                 let last_message_at: String = row.get("updated_at");
                 let duration = time_elapsed_from_string(&last_message_at).unwrap();

@@ -31,7 +31,8 @@ async fn main() {
     .await
     .unwrap();
 
-    let token = util::get_env_var("DISCORD_TOKEN");
+    let token = std::env::var("DISCORD_TOKEN")
+        .expect("Expected a discord token in the environment");
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::GUILD_MEMBERS

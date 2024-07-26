@@ -97,7 +97,8 @@ pub fn execute_console_command(code: &str) -> Result<String, std::io::Error> {
 
 pub fn should_paste_message(message_length: usize) -> bool {
     message_length
-        > get_env_var("MAX_MESSAGE_LENGTH")
+        > std::env::var("MAX_MESSAGE_LENGTH")
+            .unwrap()   
             .parse::<usize>()
             .unwrap()
 }
@@ -111,7 +112,14 @@ pub fn time_elapsed_from_string(time_string: &str) -> Result<TimeDelta, Box<dyn 
     Ok(duration)
 }
 
-/// Just a prettier way to get a env var as a string
-pub fn get_env_var(var: &str) -> String {
-    std::env::var(var).expect(&format!("Expected {} in the environment, found none.", var))
+/// calculate the xp required to reach the next level
+/// The formula is `xp_constant * level^2 + xp_constant`
+/// The xp_constant is the value required to reach level 1
+pub fn xp_required(level: i32, xp_constant: i32) -> i32 {
+    let required = xp_constant * (level * level);
+    if required == 0 {
+        xp_constant
+    } else {
+        required
+    }
 }

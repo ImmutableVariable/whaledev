@@ -1,8 +1,12 @@
+use serenity::all::CreateMessage;
+use serenity::builder;
 // rank.rs
 use serenity::model::channel::Message;
 use serenity::prelude::Context;
 use sqlx::SqliteConnection;
 use sqlx::Row;
+
+use crate::util;
 
 fn generate_progress_bar(progress: f32, length: usize) -> String {
     (0..length)
@@ -16,7 +20,10 @@ pub async fn execute(
     _args: Vec<&str>,
     db_conn: &mut SqliteConnection
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let user_id = msg.author.id.to_string();
+    let user = msg.mentions.get(0).unwrap_or(&msg.author);
+    let username = &user.name;
+    let user_id = user.id.to_string();
+
     let row = sqlx::query("SELECT * FROM users WHERE id = ?")
         .bind(&user_id)
         .fetch_optional(db_conn)
@@ -32,18 +39,25 @@ pub async fn execute(
     };
 
     let xp_constant = std::env::var("XP_CONSTANT")?.parse::<i32>()?;
-    let xp_required = xp_constant * (level * level);
+    let xp_required = util::xp_required(level, xp_constant);
 
     // 50/100 = 0.5
     let progress = xp as f32 / xp_required as f32;
-    let progress_bar = generate_progress_bar(progress, 10);
+    let progress_bar = format!("({}) {} ({})", 0, generate_progress_bar(progress, 10), xp_required);
     
-    let message = format!(
-        "You are level {} with {} XP\n{}/{} [{}]",
-        level, xp, xp, xp_required, progress_bar
-    );
+    let embed = builder::CreateEmbed::default()
+        .title(&format!("{}'s Rank!", username))
+        .description(&format!("Here is {}'s rank!", username))
+        .fields(vec![
+            ("Level", level.to_string(), false),
+            ("XP", xp.to_string(), false),
+            ("Progress", progress_bar, false),
+        ])
+        .color(0xFFB6C1);
 
-    msg.channel_id.say(&ctx.http, &message).await?;
+    let message = CreateMessage::new().embed(embed);
+
+    msg.channel_id.send_message(&ctx.http, message).await?;
 
     Ok(())
 }
