@@ -58,7 +58,7 @@ impl EventHandler for Handler {
             return;
         }
     
-        if msg.content.len() >= 5 {
+        if msg.content.len() >= 3 {
             let mut conn = self.db_pool.lock().await;
             match xp::handler(&ctx, &msg, &mut conn).await {
                 Ok(_) => {}
