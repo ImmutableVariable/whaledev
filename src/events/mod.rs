@@ -13,6 +13,7 @@ mod xp;
 mod paste;
 mod bump;
 
+/// A struct that implements the EventHandler trait, which is the main bot event handler.
 pub struct Handler {
     pub db_pool: Arc<Mutex<SqliteConnection>>,
 }

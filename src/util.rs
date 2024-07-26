@@ -9,8 +9,7 @@ use std::{
 use tokio::time::sleep;
 
 // This is a little better ig, i dont think its really great though
-static LAST_PASTE_TIME: Lazy<Arc<Mutex<Option<Instant>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(None)));
+static LAST_PASTE_TIME: Lazy<Arc<Mutex<Option<Instant>>>> = Lazy::new(|| Arc::new(Mutex::new(None)));
 
 pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> {
     let last_paste_time = Arc::clone(&LAST_PASTE_TIME);
@@ -66,6 +65,7 @@ pub async fn get_url_content(url: &str) -> Result<String, Box<dyn std::error::Er
     Ok(content)
 }
 
+/// Formats a number into a human readable ordinal number, e.g. 1st, 2nd, 3rd, 4th, 5th, etc.
 pub fn formatted_number(number: u64) -> String {
     let last_digit = number % 10;
     let last_two_digits = number % 100;
@@ -116,10 +116,5 @@ pub fn time_elapsed_from_string(time_string: &str) -> Result<TimeDelta, Box<dyn 
 /// The formula is `xp_constant * level^2 + xp_constant`
 /// The xp_constant is the value required to reach level 1
 pub fn xp_required(level: i32, xp_constant: i32) -> i32 {
-    let required = xp_constant * (level * level);
-    if required == 0 {
-        xp_constant
-    } else {
-        required
-    }
+    xp_constant * (level * level) + xp_constant
 }
