@@ -21,41 +21,19 @@ pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> 
         }
     }
 
+    let params = [("content", message)];
     let client = reqwest::Client::new();
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        CONTENT_TYPE,
-        HeaderValue::from_static("application/x-www-form-urlencoded"),
-    );
-    headers.insert(
-        USER_AGENT,
-        HeaderValue::from_str(&format!(
-            "Whaledev/{} (+https://github.com/ImmutableVariable/whaledev)",
-            version
-        ))
-        .unwrap(),
-    );
-
-    if let Ok(api_key) = std::env::var("DPASTE_API_KEY") {
-        // add api key if it exists
-        headers.insert(
-            "Authorization",
-            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
-        );
-    }
-
-    let response = client
+    let res = client
         .post("https://dpaste.com/api/")
-        .headers(headers)
-        .body(format!("content={}", message))
+        .form(&params)
         .send()
         .await?;
 
-    let paste_url = response.headers().get("location").unwrap().to_str()?;
+    let paste_url = &res.headers()["location"];
 
     *LAST_PASTE_TIME.lock().await = Some(Instant::now());
 
-    Ok(paste_url.to_string())
+    Ok(paste_url.to_str().unwrap().to_string())
 }
 
 pub async fn get_url_content(url: &str) -> Result<String, Box<dyn std::error::Error>> {
