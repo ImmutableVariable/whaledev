@@ -19,13 +19,11 @@ Whaledev is a discord bot written using [Serenity](https://www.github.com/sereni
 
 1. Rename the `.env.example` file to `.env`
 2. `DISCORD_TOKEN` - your bot's token (DANGER! DO NOT SHARE THIS. ANYONE CAN CONTROL YOUR BOT WITH THIS)
-3. `OWNER_ID` - Discord ID (DANGER! USERS CAN RUN ARBITRARY CODE WITH THE "EVAL" COMMAND)
-4. `OWNER_GUILD_ID` - ID of the server you want the bot to be able to use the "eval" command in (DANGER! USERS CAN RUN ARBITRARY CODE WITH THE "EVAL" COMMAND)
-5. `WELCOME_CHANNEL_ID` - channel the welcome messages will be sent to.
-6. `REMINDER_ROLE_ID` - ID of the role that will be mentioned in the bump reminder.
-7. `REMINDER_CHANNEL_ID` - ID of the channel the bump reminder will be sent to.
-8. `MAX_MESSAGE_LENGTH` - maximum length of a message that can be sent in the server. (Default is 1500)
-9. `PREFIX` - prefix you want the bot to use. (Default is `!`)
+3. `WELCOME_CHANNEL_ID` - channel the welcome messages will be sent to.
+4. `REMINDER_ROLE_ID` - ID of the role that will be mentioned in the bump reminder.
+5. `REMINDER_CHANNEL_ID` - ID of the channel the bump reminder will be sent to.
+6. `MAX_MESSAGE_LENGTH` - maximum length of a message that can be sent in the server. (Default is 1500)
+7. `PREFIX` - prefix you want the bot to use. (Default is `!`)
 
 ### Running
 
