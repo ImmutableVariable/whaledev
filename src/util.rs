@@ -13,7 +13,7 @@ static LAST_PASTE_TIME: Lazy<Arc<Mutex<Option<Instant>>>> = Lazy::new(|| Arc::ne
 
 pub async fn paste(message: &str) -> Result<String, Box<dyn std::error::Error>> {
     let last_paste_time = Arc::clone(&LAST_PASTE_TIME);
-    let version = env!("CARGO_PKG_VERSION").to_string();
+
     // paste.com only allows one request every second. This isn't an ideal solution, but I don't really care.
     if let Some(last_time) = last_paste_time.lock().await.as_ref() {
         if last_time.elapsed() < Duration::from_secs(1) {
