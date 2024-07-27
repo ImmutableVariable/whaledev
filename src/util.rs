@@ -1,6 +1,5 @@
 use chrono::{NaiveDateTime, TimeDelta};
 use once_cell::sync::Lazy;
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
 use serenity::futures::lock::Mutex;
 use std::{
     sync::Arc,
@@ -59,18 +58,6 @@ pub fn formatted_number(number: u64) -> String {
     } else {
         format!("{}th", number)
     }
-}
-
-pub fn execute_console_command(code: &str) -> Result<String, std::io::Error> {
-    let command = if cfg!(windows) { "cmd" } else { "sh" };
-    let output = std::process::Command::new(command)
-        .arg("/C")
-        .arg(code)
-        .output()?;
-
-    // format into a bash code block
-    let output_msg = format!("```bash\n{}```", String::from_utf8_lossy(&output.stdout));
-    Ok(output_msg)
 }
 
 pub fn should_paste_message(message_length: usize) -> bool {

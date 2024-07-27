@@ -1,7 +1,6 @@
 use serenity::model::channel::Message;
 use serenity::prelude::Context;
 use sqlx::SqliteConnection;
-mod eval;
 mod help;
 mod paste;
 mod ping;
@@ -17,9 +16,6 @@ pub async fn handler(
     match command {
         "ping" => {
             ping::execute(ctx, msg, args).await?;
-        }
-        "eval" => {
-            eval::execute(ctx, msg, args).await?;
         }
         "paste" => {
             paste::execute(ctx, msg, args).await?;
