@@ -5,6 +5,7 @@ mod help;
 mod paste;
 mod ping;
 mod rank;
+mod leaderboard;
 
 pub async fn handler(
     ctx: Context,
@@ -25,6 +26,9 @@ pub async fn handler(
         }
         "rank" => {
             rank::execute(ctx, msg, args, db_conn).await?;
+        }
+        "leaderboard" => {
+            leaderboard::execute(ctx, msg, args, db_conn).await?;
         }
         _ => {
             // say nothing...

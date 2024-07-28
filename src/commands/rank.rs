@@ -1,6 +1,6 @@
+// rank.rs
 use serenity::all::CreateMessage;
 use serenity::builder;
-// rank.rs
 use serenity::model::channel::Message;
 use serenity::prelude::Context;
 use sqlx::SqliteConnection;

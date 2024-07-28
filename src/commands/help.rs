@@ -4,10 +4,12 @@ use serenity::builder;
 use serenity::model::channel::Message;
 use serenity::prelude::Context;
 
-const COMMANDS_AND_DESCRIPTIONS: [(&str, &str); 3] = [
+const COMMANDS_AND_DESCRIPTIONS: [(&str, &str); 5] = [
     ("ping", "Responds with 'Pong!'"),
     ("paste", "Copies a code block to the DPaste"),
     ("help", "Displays this message"),
+    ("rank", "Displays the rank of a user"),
+    ("leaderboard", "Displays the leaderboard (top 10 users)"),
 ];
 
 pub async fn execute(
