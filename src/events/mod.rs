@@ -5,7 +5,6 @@ use serenity::all::{ActivityData, ChannelId, CreateMessage, Member, OnlineStatus
 use serenity::model::channel::Message;
 use serenity::{async_trait, builder};
 use serenity::prelude::*;
-use sqlx::sqlite::SqliteConnection;
 use crate::{commands, util};
 use util::should_paste_message;
 
@@ -15,9 +14,8 @@ mod bump;
 
 /// A struct that implements the EventHandler trait, which is the main bot event handler.
 pub struct Handler {
-    pub db_pool: Arc<Mutex<SqliteConnection>>,
+    pub db_pool: Arc<sqlx::Pool<sqlx::Sqlite>>,
 }
-
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -33,7 +31,7 @@ impl EventHandler for Handler {
         // check if the message contains attachments, if it does, upload the attachments to a paste service
         // this must be before message length check, otherwise, the long message would be deleted and the attachments would be lost
         if !msg.attachments.is_empty() {
-            return paste::paste_file_handler(&ctx, &msg).await.expect("Error pasting file");
+            return paste::paste_file_handler(ctx, msg).await.expect("Error pasting file");
         }
     
         if should_paste_message(msg.content.len()) {
@@ -42,7 +40,7 @@ impl EventHandler for Handler {
     
         let prefix = env::var("PREFIX").unwrap();
         if msg.content.starts_with(&prefix) {
-            let mut conn = self.db_pool.lock().await;
+            let mut conn = self.db_pool.acquire().await.unwrap();
             let content = msg.content.trim_start_matches(&prefix);
             let mut args = content.split_whitespace();
             let command = args.next().unwrap_or(""); // the first word will be the command name
@@ -55,17 +53,21 @@ impl EventHandler for Handler {
                 }
             }
     
+            conn.close().await.expect("Error closing connection");
             return;
         }
     
         if msg.content.len() >= 3 {
-            let mut conn = self.db_pool.lock().await;
+            let mut conn = self.db_pool.acquire().await.unwrap();
             match xp::handler(&ctx, &msg, &mut conn).await {
                 Ok(_) => {}
                 Err(why) => {
                     println!("Error handling xp: {:?}", why);
                 }
             }
+
+            conn.close().await.expect("Error closing connection");
+            return;
         }
     }
 

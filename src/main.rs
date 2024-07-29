@@ -1,9 +1,6 @@
 use dotenvy::dotenv;
 use serenity::prelude::*;
-use sqlx::sqlite::SqliteConnection;
-use sqlx::Connection;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub mod commands;
 pub mod util;
@@ -15,8 +12,10 @@ async fn main() {
 
     let db_path: &str = "sqlite://./data/database.db";
 
-    let mut conn = SqliteConnection::connect(db_path).await.unwrap();
-    
+    let pool = sqlx::sqlite::SqlitePool::connect(db_path)
+        .await
+        .expect("Error connecting to the database");
+
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS users (
@@ -27,7 +26,7 @@ async fn main() {
         )
         "#
     )
-    .execute(&mut conn)
+    .execute(&mut *pool.acquire().await.unwrap())
     .await
     .unwrap();
 
@@ -40,7 +39,7 @@ async fn main() {
         | GatewayIntents::MESSAGE_CONTENT;
 
     let handler = events::Handler {
-        db_pool: Arc::new(Mutex::new(conn)),
+        db_pool: Arc::new(pool),
     };
 
     let mut client = Client::builder(&token, intents)
@@ -48,5 +47,10 @@ async fn main() {
         .await
         .expect("Error building client");
 
-    client.start().await.expect("Error starting client");
+    match client.start().await {
+        Ok(_) => {}
+        Err(why) => {
+            println!("Client error: {:?}", why);
+        }
+    }
 }

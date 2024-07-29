@@ -4,7 +4,7 @@ use crate::util;
 
 /// Handles pasting a file to a paste service.
 /// THE MESSAGE MUST CONTAIN A ATTACHMENT!
-pub async fn paste_file_handler(ctx: &Context, msg: &Message) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn paste_file_handler(ctx: Context, msg: Message) -> Result<(), Box<dyn std::error::Error>> {
     let formatted_content = msg
         .attachments
         .iter()
