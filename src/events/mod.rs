@@ -87,7 +87,7 @@ impl EventHandler for Handler {
             .parse::<u64>()
             .unwrap();
 
-        let extra_text = std::env::var("WELCOME_EXTRA_TEXT").unwrap_or_default();
+        let additional_text = std::env::var("WELCOME_ADDITIONAL_TEXT").unwrap_or_default();
 
         let guild_member_count = new_member
             .guild_id
@@ -106,7 +106,7 @@ impl EventHandler for Handler {
             .description(format!(
                 "You are the {} member! {}",
                 util::formatted_number(guild_member_count as u64),
-                extra_text
+                additional_text
             ))
             .thumbnail(new_member.user.face())
             .color(0xFFB6C1);
