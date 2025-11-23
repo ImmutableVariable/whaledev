@@ -88,9 +88,11 @@ impl EventHandler for Handler {
             .unwrap();
 
         let additional_text = std::env::var("WELCOME_ADDITIONAL_TEXT").unwrap_or_default();
+        let reminder_role_id = std::env::var("REMINDER_ROLE_ID").unwrap_or_default();
+
         let guild_member_count = new_member
             .guild_id
-            .to_partial_guild(&ctx.http)
+            .to_partial_guild_with_counts(&ctx.http)
             .await 
             .expect("Error getting member count")
             .approximate_member_count
@@ -114,7 +116,7 @@ impl EventHandler for Handler {
         let message = CreateMessage::new()
             .content(format!(
                 "||<@&{}> <@{}>||",
-                std::env::var("REMINDER_ROLE_ID").unwrap(),
+                reminder_role_id,
                 new_member_id
             ))
             .embed(embed);
