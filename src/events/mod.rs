@@ -88,13 +88,13 @@ impl EventHandler for Handler {
             .unwrap();
 
         let additional_text = std::env::var("WELCOME_ADDITIONAL_TEXT").unwrap_or_default();
-
         let guild_member_count = new_member
             .guild_id
-            .members(&ctx.http, None, None)
-            .await
+            .to_partial_guild(&ctx.http)
+            .await 
             .expect("Error getting member count")
-            .len();
+            .approximate_member_count
+            .expect("Expected member count, found none");
 
         let new_member_id = new_member.user.id;
 
